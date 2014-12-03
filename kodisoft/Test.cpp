@@ -12,7 +12,6 @@ using std::endl;
 using std::string;
 using std::ofstream;
 
-
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
@@ -50,8 +49,20 @@ int main() {
 		p->log(string("brand new msg"));
 		delete p;*/
 
-		Process p;
+		Process q;
+		Process p(q.getProcessID());
+		Process r(q.getProcessID());
+		//Process uTorrent(6196, new ConsoleLogger());
+		//Process flux(1900 ,new ConsoleLogger());
+
+
 		std::getchar();
+		
+	/*	for (int i = 0; i < 100; i++) {
+			p.restart();
+			Sleep(100);
+		}*/
+		//delete l;
 	}
 	catch (std::runtime_error & e) {
 		std::cout << "Caught a runtime_error exception: " << e.what() << std::endl;

@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <memory>
+#include <set>
 
 #include "Callback.h"
 #include "Logger.h"
@@ -11,12 +12,14 @@
 using std::string;
 using std::wstring;
 using std::unique_ptr;
+using std::set;
 
 class Process {
 
 	private:
 		DWORD  processID;
 		HANDLE processHandle;
+
 		HANDLE watchingThread;
 		HANDLE generalEvent;
 		HANDLE stopResumeEvent;
@@ -33,7 +36,8 @@ class Process {
 		bool isStillActive() const;
 		void startRoutine();
 		void closeRoutine();
-		void restartRoutine();
+		
+		//static LPTSTR defaultPath;
 
 		Process & operator = (const Process &);
 		Process(const Process &);
@@ -58,9 +62,12 @@ class Process {
 
 		Callback onProcStart;
 		Callback onProcCrash;
-		Callback onProcManuallyStopped;
-		Callback onProcManuallyResumed;
-		Callback onProcManuallyShutdown;
+		Callback onProcManualStop;
+		Callback onProcManualResume;
+		Callback onProcManualRestart;
+		Callback onProcManualShutdown;
+
+		//switch Logger;
 
 		~Process();
 };

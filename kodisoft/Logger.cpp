@@ -21,7 +21,7 @@ Logger::Logger() {
 }
 
 Logger::~Logger() {
-	//WaitForSingleObject(logEvent, INFINITE);
+	WaitForSingleObject(logEvent, INFINITE);
 	CloseHandle(logEvent);
 }
 
@@ -57,6 +57,7 @@ void Logger::log(LPTSTR str) {
 	logRoutine(temp);
 
 	delete[] temp;
+
 	SetEvent(logEvent);
 }
 

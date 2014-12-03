@@ -1,6 +1,7 @@
 #include <tchar.h>
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include "OpenById.h"
 #include "Process.h"
@@ -16,6 +17,7 @@
 
 using std::runtime_error;
 using std::to_string;
+using std::unique_ptr;
 
 Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger) {
 
@@ -43,13 +45,13 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger) {
 
 	// read basic info to get ProcessParameters address, we only need the beginning of PEB
 	DWORD pebSize = ProcessParametersOffset + 8;
-	PBYTE peb = (PBYTE)malloc(pebSize);
-	ZeroMemory(peb, pebSize);
+	unique_ptr<BYTE> peb(new BYTE [pebSize]);
+	ZeroMemory(&(*peb), pebSize);
 
 	// read basic info to get CommandLine address, we only need the beginning of ProcessParameters
 	DWORD ppSize = CommandLineOffset + 16;
-	PBYTE pp = (PBYTE)malloc(ppSize);
-	ZeroMemory(pp, ppSize);
+	unique_ptr<BYTE> pp(new BYTE[ppSize]);
+	ZeroMemory(&(*pp), ppSize);
 
 	if (wow) {
 		// we're running as a 32-bit process in a 64-bit OS
@@ -63,35 +65,29 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger) {
 		if (err != 0) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: NtWow64QueryInformationProcess64 failed; GLE: " + to_string(err)));
 		}
 
 		// read PEB from 64-bit address space
 		_NtWow64ReadVirtualMemory64 read = (_NtWow64ReadVirtualMemory64)GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtWow64ReadVirtualMemory64");
-		err = read(processHandle, pbi.PebBaseAddress, peb, pebSize, NULL);
+		err = read(processHandle, pbi.PebBaseAddress, &(*peb), pebSize, NULL);
 		if (err != 0) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: NtWow64ReadVirtualMemory64 PEB failed; GLE: " + to_string(err)));
 		}
 
 		// read ProcessParameters from 64-bit address space
-		PBYTE* parameters = (PBYTE*)*(LPVOID*)(peb + ProcessParametersOffset); // address in remote process adress space
-		err = read(processHandle, parameters, pp, ppSize, NULL);
+		PBYTE* parameters = (PBYTE*)*(LPVOID*)(&(*peb) + ProcessParametersOffset); // address in remote process adress space
+		err = read(processHandle, parameters, &(*pp), ppSize, NULL);
 		if (err != 0) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: NtWow64ReadVirtualMemory64 Parameters failed; GLE: " + to_string(err)));
 		}
 
 		// read CommandLine
-		UNICODE_STRING_WOW64* pCommandLine = (UNICODE_STRING_WOW64*)(pp + CommandLineOffset);
+		UNICODE_STRING_WOW64* pCommandLine = (UNICODE_STRING_WOW64*)(&(*pp) + CommandLineOffset);
 		
 		commandLine = new TCHAR[pCommandLine->MaximumLength + 1];
 
@@ -99,8 +95,6 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger) {
 		if (err != 0) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: NtWow64ReadVirtualMemory64 Parameters failed; GLE: " + to_string(err)));
 		}
 	} 
@@ -119,42 +113,38 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger) {
 		}
 
 		// read PEB
-		if (!ReadProcessMemory(processHandle, pbi.PebBaseAddress, peb, pebSize, NULL)) {
+		if (!ReadProcessMemory(processHandle, pbi.PebBaseAddress, &(*peb), pebSize, NULL)) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: ReadProcessMemory PEB failed; GLE: " + to_string(err)));
 		}
 
 		// read ProcessParameters
-		PBYTE* parameters = (PBYTE*)*(LPVOID*)(peb + ProcessParametersOffset); // address in remote process adress space
-		if (!ReadProcessMemory(processHandle, parameters, pp, ppSize, NULL)) {
+		PBYTE* parameters = (PBYTE*)*(LPVOID*)(&(*peb) + ProcessParametersOffset); // address in remote process adress space
+		if (!ReadProcessMemory(processHandle, parameters, &(*pp), ppSize, NULL)) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: ReadProcessMemory Parameters failed; GLE: " + to_string(err)));
 		}
 
 		// read CommandLine
-		UNICODE_STRING* pCommandLine = (UNICODE_STRING*)(pp + CommandLineOffset);
+		UNICODE_STRING* pCommandLine = (UNICODE_STRING*)(&(*pp) + CommandLineOffset);
+		
+		commandLine = new TCHAR[pCommandLine->MaximumLength + 1];
 
 		if (!ReadProcessMemory(processHandle, pCommandLine->Buffer, commandLine, pCommandLine->MaximumLength, NULL)) {
 			err = GetLastError();
 			CloseHandle(processHandle);
-			free(peb);
-			free(pp);
 			throw(runtime_error("\nProcess: ReadProcessMemory Parameters failed; GLE: " + to_string(err)));
 		}
 	}
 
-	free(peb);
-	free(pp);
+	
 
 	status = IsWorking;
+	
 	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	stopResumeEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
-	log(_T("start!"));
+	log(_T("started ..............."));
 }

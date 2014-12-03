@@ -1,7 +1,8 @@
 #include <windows.h>
-#include <tchar.h> // _T
+#include <tchar.h>
 #include <iostream>
 #include <string>
+#include <set>
 
 #include "Process.h"
 
@@ -11,6 +12,17 @@ using std::to_string;
 using std::wstring;
 using std::to_wstring;
 using std::runtime_error;
+using std::set;
+								
+static LPTSTR msgs[] = { _T("started ..............."), 
+						 _T("shutdowned ............"),
+						 _T("manually stopped ......"),
+						 _T("manually resumed ......"),    
+						 _T("crashed. restarting ..."),   
+						 _T("restarted after crash ."),   
+						 _T("manually restarting ..."),
+						 _T("manually restarted ...."),
+}; 
 
 void Process::log(LPTSTR str) const {
 
@@ -36,10 +48,19 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 		WaitForMultipleObjects(3, h, TRUE, INFINITE);
 
 		if (!(((Process*)arg)->isStillActive())) {
+
+			((Process*)arg)->status = Restarting;
+			((Process*)arg)->log(msgs[4]);
 			((Process*)arg)->onProcCrash();
-			((Process*)arg)->restartRoutine();
-			((Process*)arg)->log(_T("crash! restarting ..."));
+
+			((Process*)arg)->closeRoutine();
+			((Process*)arg)->startRoutine();
+			
+			((Process*)arg)->status = IsWorking;
+			((Process*)arg)->log(msgs[5]);
+			((Process*)arg)->onProcStart();
 		}
+
 		SetEvent(((Process*)arg)->generalEvent);
 		SetEvent(((Process*)arg)->stopResumeEvent);
 	}
@@ -57,7 +78,7 @@ void Process::startRoutine() {
 
 	if (!isStillActive()) {
 
-		LPTSTR temp = new TCHAR[_tcslen(commandLine) + 1];
+		LPTSTR temp = new TCHAR[_tcslen(commandLine) + 3];
 		_tcscpy(temp, commandLine);
 
 		PROCESS_INFORMATION processInfo;
@@ -66,7 +87,7 @@ void Process::startRoutine() {
 		ZeroMemory(&startInfo, sizeof(startInfo));
 		ZeroMemory(&processInfo, sizeof(processInfo));
 
-		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) { // if CreateProcess (...) else log("bad news");
+		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
 			delete[] temp;
 			throw(runtime_error("\nProcess: unable to start process"));
 		}
@@ -74,19 +95,11 @@ void Process::startRoutine() {
 		processHandle = processInfo.hProcess;
 		processID = processInfo.dwProcessId;
 
-		status = IsWorking;
-		onProcStart();
-		log(_T("start!"));
-
 		delete[] temp;
 	}
 }
 
-//isStillActive
 void Process::closeRoutine() {
-
-	//INFINITE? 0?
-	//std::cout << "wait:" << (WaitForSingleObject(processHandle, 1000) == WAIT_OBJECT_0);
 
 	if (isStillActive()) {
 		TerminateProcess(processHandle, 0);
@@ -94,22 +107,21 @@ void Process::closeRoutine() {
 	}
 }
 
-void Process::restartRoutine() {
-
-	status = Restarting;
-	closeRoutine();
-	startRoutine();
-}
-
 Process::Process(LPTSTR cmd, Logger * logger) : logger(logger) {
 
-	commandLine = new TCHAR[_tcslen(cmd) + 1];
-	_tcscpy(commandLine, cmd);
+	commandLine = new TCHAR[_tcslen(cmd) + 3]; // +2 for additional "" 's
+	commandLine[0] = _T('"'); 
+	_tcscpy(commandLine + 1, cmd);
+	lstrcat(commandLine, _T("\""));	
 
 	startRoutine();
 	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	stopResumeEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
+	log(msgs[0]);
+	
+	//activeProcPids.insert(processID);
+	//printSet();
 }
 
 Process::Process(DWORD pid) : Process(pid, new FileLogger(_T("log.txt"))) {}
@@ -127,11 +139,14 @@ void Process::stop() {
 	WaitForMultipleObjects(2, h, TRUE, INFINITE);
 
 	if (status == IsWorking) {
+		processID = 0;
+		processHandle = 0;
 		status = Stopped;
-		log(_T("manual shutdown!"));
-		onProcManuallyStopped();
+		log(msgs[2]);
+		onProcManualStop();
 		closeRoutine();
 	}
+	//else log(...)
 	SetEvent(generalEvent);
 }
 
@@ -139,12 +154,12 @@ void Process::resume() {
 
 	WaitForSingleObject(generalEvent, INFINITE);
 	if (status == Stopped) {
-
 		startRoutine();
-
 		status = IsWorking;
-		onProcManuallyResumed();
+		log(msgs[3]);
+		onProcManualResume();
 	}
+	//else log(attempt...);
 	SetEvent(generalEvent);
 	SetEvent(stopResumeEvent);
 }
@@ -152,18 +167,23 @@ void Process::resume() {
 void Process::restart() {
 
 	WaitForSingleObject(generalEvent, INFINITE);
-	restartRoutine();
+	
+	status = Restarting;
+	log(msgs[6]);
+	onProcManualRestart();
+	closeRoutine();
+	startRoutine();
+	status = IsWorking;
+	log(msgs[7]);
 	SetEvent(generalEvent);
 }
 
 DWORD Process::getProcessID() const { 
-	bool b = isStillActive();
-	return b ? processID : 0; 
+	return processID;
 }
 
 HANDLE Process::getProcessHandle() const { 
-	bool b = isStillActive();
-	return b ? processHandle : 0; 
+	return processHandle;
 }
 
 LPTSTR Process::getCommandLine() const { 
@@ -171,7 +191,9 @@ LPTSTR Process::getCommandLine() const {
 }
 
 LPTSTR Process::getStatus() const {
-	static LPTSTR statusStr[] = { _T("is working"), _T("stopped"), _T("restarting") };
+	static LPTSTR statusStr[] = { _T("is working"), 
+								  _T("is stopped"), 
+								  _T("restarting") };
 	return statusStr[status];
 }
 
@@ -187,18 +209,19 @@ tstring Process::getInfo() const {
 
 Process::~Process() {
 
-	//WaitForSingleObject() ?
-	//if(commandLine != nullptr)
+	log(msgs[1]);
+	
+	//activeProcPids.erase(processID);
+	//printSet();
 
-	log(_T("manual shutdown!"));
-
+	//WaitForSingleObject(watchingThread, INFINITE);
 	TerminateThread(watchingThread, 0);
 	CloseHandle(watchingThread);
 
 	CloseHandle(generalEvent);
 	CloseHandle(stopResumeEvent);
 	closeRoutine();
-	onProcManuallyShutdown();
+	onProcManualShutdown();
 
 	delete[] commandLine;
 }
