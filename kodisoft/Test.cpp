@@ -21,20 +21,6 @@ using std::ofstream;
 //if (_CrtMemDifference(&S3, &S1, &S2))
 //_CrtMemDumpStatistics(&S3);
 
-//template< typename log_policy >
-//std::string logger< log_policy >::get_logline_header()
-//{
-//	std::stringstream header;
-//	header.str("");
-//	header.fill('0');
-//	header.width(7);
-//	header << log_line_number++ << " < " << get_time() << " - ";
-//	header.fill('0');
-//	header.width(7);
-//	header << clock() << " > ~ ";
-//	return header.str();
-//}
-
 void m(const char * s) { std::cout << s << std::endl; }
 
 static DWORD WINAPI yo(void * arg) {
@@ -62,22 +48,39 @@ int main() {
 		for (int i = 0; i < 10; i++)
 			p[i] = new Process();*/
 
-
 		/*Process p(q.getProcessID());
 		Process r(q.getProcessID());*/
 
-		Process uTorrent(51285, new ConsoleLogger());
+		Process p(11852);
+		p.stop();
+		std::getchar();
+		p.restart();
+		std::getchar();
+
 		//Process flux(1900 ,new ConsoleLogger());
-
-		//Process p;// (new ConsoleLogger());
-
+		//uTorrent.stop();
+		//uTorrent.restart();
+		//Process p(_T("calc"), new FileLogger(tstring(_T("log.txt"))));// (new ConsoleLogger());
 		/*std::getchar();
+		p.stop();
 		p.stop();
 		p.stop();
 		std::getchar();
 		p.resume();
 		p.resume();*/
-		std::getchar();
+		
+		//uTorrent.restart();
+		//p.stop();
+		//p.restart();
+		//p.resume();
+
+		//p.resume();
+		//p.restart();
+		
+		
+		//p.switchLogger(new FileLogger(tstring(_T("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt"))));
+
+		//std::getchar();
 
 	/*	for (int i = 0; i < 10; i++)
 			delete p[i];

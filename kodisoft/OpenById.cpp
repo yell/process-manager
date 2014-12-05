@@ -16,11 +16,17 @@
 using std::runtime_error;
 using std::unique_ptr;
 
+
+
 Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), id(++count) {
+
+	#ifndef _UNICODE
+	throw(runtime_error("\nProcess: Unable to retrieve command line with Multi-Byte Character Set (use Unicode instead)"));
+	#endif
 
 	// open the process
 	DWORD err = 0;
-	processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+	processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, pid);
 	
 	if (processHandle == nullptr)
 		throw(runtime_error("\nProcess: OpenProcess failed"));
@@ -127,7 +133,6 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), i
 
 	status = IsWorking;
 	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	stopResumeEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
-	log(_T("started ..............."));
+	log(tstring(_T("started")));
 }

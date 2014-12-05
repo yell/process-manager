@@ -14,8 +14,9 @@ class Logger
 
 	public:
 		Logger();
-		void log(LPTSTR);
-		virtual void logRoutine(LPTSTR) = 0;
+		void log(tstring &);
+		virtual void logRoutine(tstring &) = 0;
+		virtual tstring getInfo() const = 0;
 		virtual ~Logger();
 };
 
@@ -23,7 +24,8 @@ class ConsoleLogger : public Logger
 {
 	public:
 		ConsoleLogger();
-		void logRoutine(LPTSTR);
+		void logRoutine(tstring &);
+		tstring getInfo() const;
 		~ConsoleLogger();
 };
 
@@ -31,10 +33,12 @@ class FileLogger : public Logger
 {
 	private:
 		tofstream tfout;
+		tstring fileName;
 
 	public:
-		FileLogger(LPTSTR);
-		void logRoutine(LPTSTR);
+		FileLogger(tstring &);
+		void logRoutine(tstring &);
+		tstring getInfo() const;
 		~FileLogger();
 };
 

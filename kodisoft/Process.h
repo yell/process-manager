@@ -21,15 +21,17 @@ class Process {
 		HANDLE processHandle;
 
 		HANDLE watchingThread;
+		DWORD threadId;
+
 		HANDLE generalEvent;
-		HANDLE stopResumeEvent;
+	
 		LPTSTR commandLine;
 
-		enum Status { IsWorking, Stopped, Restarting } status;
+		enum Status { IsWorking, Stopped, Restarting, Finishing } status;
 
 		unique_ptr<Logger> logger;
 
-		void log(LPTSTR) const;
+		void log(tstring &) const;
 
 		static DWORD WINAPI watchingThreadFunc(void *);
 
@@ -58,8 +60,9 @@ class Process {
 		DWORD  getProcessID() const;
 		HANDLE getProcessHandle() const;
 		LPTSTR getCommandLine() const;
-		LPTSTR getStatus() const;
+		tstring getStatus() const;
 		tstring getInfo() const;
+		tstring getLoggerInfo() const;
 
 		Callback onProcStart;
 		Callback onProcCrash;

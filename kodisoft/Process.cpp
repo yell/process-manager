@@ -1,72 +1,48 @@
 #include <windows.h>
 #include <tchar.h>
 #include <iostream>
-#include <iomanip>
 
 #include "Macro.h"
 #include "Process.h"
 
 using std::endl;
-using std::setw;
-using std::setfill;
+using std::flush;
 using std::runtime_error;
 
 
 int Process::count;
 
-static LPTSTR msgs[] = { _T("process is being watched"), 
-						 _T("shutdowned ............"),
-						 _T("manually stopped ......"),
-						 _T("manually resumed ......"),    
-						 _T("crashed. restarting ..."),   
-						 _T("restarted after crash ."),   
-						 _T("manually restarting ......................"),
-						 _T("manually restarted ......................."),
-						 _T("logger has been switched"),
-						 _T("(mogla bit v drugom loggere)"),
-						 _T("an attempt to stop already stopped process"),
-						 _T("an attempt to resume active process......."),
-}; 
+void Process::log(tstring & str) const {
 
-void Process::log(LPTSTR str) const {
+	tstringstream tstream;
+	tstream << _T("[ msg: ") << str << _T(" ]\n") << getInfo() << _T("\n") << flush;
+	tstring t(tstream.str());
 
-	tstring info = getInfo();
-	LPTSTR t = &info[0];
-
-	LPTSTR temp = new TCHAR[_tcsclen(str) + _tcsclen(t) + 1];
-
-	_tcscpy(temp, str);
-	lstrcat(temp, t);
-
-	logger->log(temp);
-
-	delete[] temp;
+	logger->log(t);
 }
 
 DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
-	HANDLE h[3] = { ((Process*)arg)->processHandle, ((Process*)arg)->generalEvent, ((Process*)arg)->stopResumeEvent };
+	HANDLE h[2] = { ((Process*)arg)->processHandle, ((Process*)arg)->generalEvent };
 
-	while (1) {
+	while (((Process*)arg)->status != Finishing) {
 
-		WaitForMultipleObjects(3, h, TRUE, INFINITE);
+		WaitForMultipleObjects(2, h, TRUE, 0);
 
-		if (!(((Process*)arg)->isStillActive())) {
+		if (((Process*)arg)->status == IsWorking && !(((Process*)arg)->isStillActive())) {
 
 			((Process*)arg)->status = Restarting;
-			((Process*)arg)->log(msgs[4]);
+			((Process*)arg)->log(tstring(_T("crashed. restarting ...")));
 			((Process*)arg)->onProcCrash();
 
 			((Process*)arg)->closeRoutine();
 			((Process*)arg)->startRoutine();
-			
-			((Process*)arg)->status = IsWorking;
-			((Process*)arg)->log(msgs[5]);
-			((Process*)arg)->onProcStart();
-		}
 
+			((Process*)arg)->status = IsWorking;
+			((Process*)arg)->log(tstring(_T("restarted after crash")));
+			((Process*)arg)->onProcStart();
+		}	
 		SetEvent(((Process*)arg)->generalEvent);
-		SetEvent(((Process*)arg)->stopResumeEvent);
 	}
 	return 0;
 }
@@ -80,24 +56,26 @@ bool Process::isStillActive() const {
 
 void Process::startRoutine() {
 
-	LPTSTR temp = new TCHAR[_tcslen(commandLine) + 3];
-	_tcscpy(temp, commandLine);
+	if (!isStillActive()) {
+		LPTSTR temp = new TCHAR[_tcslen(commandLine) + 1];
+		_tcscpy(temp, commandLine);
 
-	PROCESS_INFORMATION processInfo;
-	STARTUPINFO startInfo;
+		PROCESS_INFORMATION processInfo;
+		STARTUPINFO startInfo;
 
-	ZeroMemory(&startInfo, sizeof(startInfo));
-	ZeroMemory(&processInfo, sizeof(processInfo));
+		ZeroMemory(&startInfo, sizeof(startInfo));
+		ZeroMemory(&processInfo, sizeof(processInfo));
 
-	if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
+		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
+			delete[] temp;
+			throw(runtime_error("\nProcess: Unable to start process"));
+		}
+
+		processHandle = processInfo.hProcess;
+		processID = processInfo.dwProcessId;
+
 		delete[] temp;
-		throw(runtime_error("\nProcess: Unable to start process"));
 	}
-		
-	processHandle = processInfo.hProcess;
-	processID = processInfo.dwProcessId;
-
-	delete[] temp;
 }
 
 void Process::closeRoutine() {
@@ -110,33 +88,39 @@ void Process::closeRoutine() {
 
 Process::Process(LPTSTR cmd, Logger * logger) : logger(logger), id(++count) {
 
-	commandLine = new TCHAR[_tcslen(cmd) + 3]; // +2 for additional "" 's
+	commandLine = new TCHAR[_tcslen(cmd) + 3];
 	commandLine[0] = _T('"'); 
 	_tcscpy(commandLine + 1, cmd);
 	lstrcat(commandLine, _T("\""));	
 
+	status = IsWorking;
 	startRoutine();
 	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	stopResumeEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
-	log(msgs[0]);
-	
-	//activeProcPids.insert(processID);
-	//printSet();
+	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, &threadId);
+	log(tstring(_T("started")));
 }
 
-Process::Process(DWORD pid) : Process(pid, new FileLogger(_T("log.txt"))) {}
+Process::Process(DWORD pid) : Process(pid, new FileLogger(tstring(_T("log.txt")))) {}
 
-Process::Process(LPTSTR cmd) : Process(cmd, new FileLogger(_T("log.txt"))) {}
+Process::Process(LPTSTR cmd) : Process(cmd, new FileLogger(tstring(_T("log.txt")))) {}
 
 Process::Process(Logger * logger) : Process(_T("calc"), logger) {}
 
-Process::Process() : Process(new FileLogger(_T("log.txt"))) {}
+Process::Process() : Process(new FileLogger(tstring(_T("log.txt")))) {}
 
 void Process::switchLogger(Logger * logger) {
-	log(msgs[8]);
+
+	tstringstream tstream;
+	tstream << _T("switched logger to ") << logger->getInfo() << flush;
+	log(tstream.str());
+	
+	tstring prev = this->logger->getInfo();
+	
 	this->logger.reset(logger);
-	log(msgs[9]);
+	
+	tstream.str(_T(""));
+	tstream << _T("continuing logging after ") << prev << flush;
+	log(tstream.str());
 }
 
 void Process::stop() {
@@ -145,17 +129,15 @@ void Process::stop() {
 
 	if (status == IsWorking) {
 
-		WaitForSingleObject(stopResumeEvent, INFINITE);
 		status = Stopped;
-		log(msgs[2]);
 		onProcManualStop();
 		closeRoutine();
 		//processID = 0;
 		//processHandle = 0;
-		//SetEvent(Event);
+		log(tstring(_T("manually stopped")));
 	}
 	else
-		log(msgs[10]);
+		log(tstring(_T("an attempt to stop already stopped process")));
 
 	SetEvent(generalEvent);
 }
@@ -166,15 +148,14 @@ void Process::resume() {
 
 	if (status == Stopped) {
 
-		//WaitForSingleObject(stopResumeEvent, INFINITE);
 		startRoutine();
+
 		status = IsWorking;
-		log(msgs[3]);
+		log(tstring(_T("manually resumed")));
 		onProcManualResume();
-		SetEvent(stopResumeEvent);
 	}
 	else
-		log(msgs[11]);
+		log(tstring(_T("an attempt to resume active process")));
 
 	SetEvent(generalEvent);
 }
@@ -184,63 +165,82 @@ void Process::restart() {
 	WaitForSingleObject(generalEvent, INFINITE);
 	
 	status = Restarting;
-	log(msgs[6]);
+	log(tstring(_T("manually restarting ...")));
 	onProcManualRestart();
+
 	closeRoutine();
 	startRoutine();
+	
 	status = IsWorking;
-	log(msgs[7]);
+	log(tstring(_T("manually restarted")));
+
 	SetEvent(generalEvent);
 }
 
 int Process::getId() const {
+
 	return id;
 }
 
 DWORD Process::getProcessID() const { 
+
 	return processID;
 }
 
 HANDLE Process::getProcessHandle() const { 
+
 	return processHandle;
 }
 
 LPTSTR Process::getCommandLine() const { 
+
 	return commandLine; 
 }
 
-LPTSTR Process::getStatus() const {
-	static LPTSTR statusStr[] = { _T("is working"), 
-								  _T("is stopped"), 
-								  _T("restarting") };
+tstring Process::getStatus() const {
+
+	tstring statusStr[] = { _T("is working"), 
+				_T("is stopped"), 
+			        _T("restarting"),
+				_T("finishing")};
+	
 	return statusStr[status];
 }
 
 tstring Process::getInfo() const {
+
 	tstringstream tstream;
-	tstream << _T(" [ id: ") << setfill(_T(' ')) << setw(4) << getId();
-	tstream << _T(" ] [ pid: ") << setfill(_T(' ')) << setw(6) << getProcessID();
+
+	tstream << _T(" [ id: ") << getId();
+	tstream << _T(" ] [ pid: ") << getProcessID();
 	tstream << _T(" ] [ handle: 0x") << getProcessHandle();
 	tstream << _T(" ] [ status: ") << getStatus();
-	tstream << _T(" ] [ cmd: ") << getCommandLine() << _T(" ] ") << std::flush;
+	tstream << _T(" ] [ cmd: ") << getCommandLine();
+	tstream << _T(" ] [ logger: ") << getLoggerInfo() << _T(" ] ") << flush;
+
 	tstring t(tstream.str());
 	return t;
 }
 
+tstring Process::getLoggerInfo() const {
+
+	return logger->getInfo();
+}
+
 Process::~Process() {
 
-	log(msgs[1]);
+	status = Finishing;
+	log(tstring(_T("manually shutdowned")));
+	onProcManualShutdown();
 
-	//WaitForSingleObject(watchingThread, INFINITE);
-	TerminateThread(watchingThread, 0);
+	PostThreadMessage(threadId, WM_QUIT, 0, 0);
+	WaitForSingleObject(watchingThread, INFINITE);
 	CloseHandle(watchingThread);
 
-	//WaitForSingleObject(generalEvent, INFINITE);
+	WaitForSingleObject(generalEvent, INFINITE);
 	CloseHandle(generalEvent);
-	//WaitForSingleObject(stopResumeEvent, INFINITE);
-	CloseHandle(stopResumeEvent);
+
 	closeRoutine();
-	onProcManualShutdown();
 
 	delete[] commandLine;
 }

@@ -7,6 +7,7 @@
 #include "Logger.h"
 
 using std::endl;
+using std::flush;
 using std::string;
 using std::wstring;
 using std::runtime_error;
@@ -38,43 +39,48 @@ tstring Logger::getTime() {
 	#endif
 }
 
-void Logger::log(LPTSTR str) {
+void Logger::log(tstring & str) {
 
 	WaitForSingleObject(logEvent, INFINITE);
 	
 	tstringstream tstream;
-	tstream << _T(" [ ") << getTime() << _T(" ] ") << std::flush;
+	tstream << _T(" [ ") << getTime() << _T(" ] ") << str << flush;
 	tstring t(tstream.str());
-
-	LPTSTR tt = &t[0];
-	LPTSTR temp = new TCHAR[_tcsclen(tt) + _tcsclen(str) + 1];
-	
-	_tcscpy(temp, tt);
-	lstrcat(temp, str);
 		
-	logRoutine(temp);
-
-	delete[] temp;
+	logRoutine(t);
 
 	SetEvent(logEvent);
 }
 
 ConsoleLogger::ConsoleLogger() {}
 
-void ConsoleLogger::logRoutine(LPTSTR str) {
+void ConsoleLogger::logRoutine(tstring & str) {
 	tout << str << endl;
+}
+
+tstring ConsoleLogger::getInfo() const {
+	return tstring(_T("ConsoleLogger"));
 }
 
 ConsoleLogger::~ConsoleLogger() {}
 
-FileLogger::FileLogger(LPTSTR fileName) {
+FileLogger::FileLogger(tstring & fileName) : fileName(fileName) {
 	tfout.open(fileName, std::ios_base::out | std::ios_base::app);
 	if (!tfout.good())
-		throw(runtime_error("Logger: unable to open the file"));
+		throw(runtime_error("Logger: Unable to open the file"));
 }
 
-void FileLogger::logRoutine(LPTSTR str) {
+void FileLogger::logRoutine(tstring & str) {
 	tfout << str << endl;
+}
+
+tstring FileLogger::getInfo() const {
+	
+	tstringstream tstream;
+	tstream << _T("FileLogger(\"") << fileName << _T("\")") << flush;
+	tstring t(tstream.str());
+	
+	return t;
 }
 
 FileLogger::~FileLogger() {
