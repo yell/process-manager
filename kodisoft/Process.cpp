@@ -1,27 +1,31 @@
 #include <windows.h>
 #include <tchar.h>
 #include <iostream>
-#include <string>
-#include <set>
+#include <iomanip>
 
+#include "Macro.h"
 #include "Process.h"
 
 using std::endl;
-using std::string;
-using std::to_string;
-using std::wstring;
-using std::to_wstring;
+using std::setw;
+using std::setfill;
 using std::runtime_error;
-using std::set;
-								
-static LPTSTR msgs[] = { _T("started ..............."), 
+
+
+int Process::count;
+
+static LPTSTR msgs[] = { _T("process is being watched"), 
 						 _T("shutdowned ............"),
 						 _T("manually stopped ......"),
 						 _T("manually resumed ......"),    
 						 _T("crashed. restarting ..."),   
 						 _T("restarted after crash ."),   
-						 _T("manually restarting ..."),
-						 _T("manually restarted ...."),
+						 _T("manually restarting ......................"),
+						 _T("manually restarted ......................."),
+						 _T("logger has been switched"),
+						 _T("(mogla bit v drugom loggere)"),
+						 _T("an attempt to stop already stopped process"),
+						 _T("an attempt to resume active process......."),
 }; 
 
 void Process::log(LPTSTR str) const {
@@ -76,27 +80,24 @@ bool Process::isStillActive() const {
 
 void Process::startRoutine() {
 
-	if (!isStillActive()) {
+	LPTSTR temp = new TCHAR[_tcslen(commandLine) + 3];
+	_tcscpy(temp, commandLine);
 
-		LPTSTR temp = new TCHAR[_tcslen(commandLine) + 3];
-		_tcscpy(temp, commandLine);
+	PROCESS_INFORMATION processInfo;
+	STARTUPINFO startInfo;
 
-		PROCESS_INFORMATION processInfo;
-		STARTUPINFO startInfo;
+	ZeroMemory(&startInfo, sizeof(startInfo));
+	ZeroMemory(&processInfo, sizeof(processInfo));
 
-		ZeroMemory(&startInfo, sizeof(startInfo));
-		ZeroMemory(&processInfo, sizeof(processInfo));
-
-		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
-			delete[] temp;
-			throw(runtime_error("\nProcess: unable to start process"));
-		}
-		
-		processHandle = processInfo.hProcess;
-		processID = processInfo.dwProcessId;
-
+	if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
 		delete[] temp;
+		throw(runtime_error("\nProcess: Unable to start process"));
 	}
+		
+	processHandle = processInfo.hProcess;
+	processID = processInfo.dwProcessId;
+
+	delete[] temp;
 }
 
 void Process::closeRoutine() {
@@ -107,7 +108,7 @@ void Process::closeRoutine() {
 	}
 }
 
-Process::Process(LPTSTR cmd, Logger * logger) : logger(logger) {
+Process::Process(LPTSTR cmd, Logger * logger) : logger(logger), id(++count) {
 
 	commandLine = new TCHAR[_tcslen(cmd) + 3]; // +2 for additional "" 's
 	commandLine[0] = _T('"'); 
@@ -132,36 +133,50 @@ Process::Process(Logger * logger) : Process(_T("calc"), logger) {}
 
 Process::Process() : Process(new FileLogger(_T("log.txt"))) {}
 
+void Process::switchLogger(Logger * logger) {
+	log(msgs[8]);
+	this->logger.reset(logger);
+	log(msgs[9]);
+}
+
 void Process::stop() {
 
-	HANDLE h[2] = { generalEvent, stopResumeEvent };
-
-	WaitForMultipleObjects(2, h, TRUE, INFINITE);
+	WaitForSingleObject(generalEvent, INFINITE);
 
 	if (status == IsWorking) {
-		processID = 0;
-		processHandle = 0;
+
+		WaitForSingleObject(stopResumeEvent, INFINITE);
 		status = Stopped;
 		log(msgs[2]);
 		onProcManualStop();
 		closeRoutine();
+		//processID = 0;
+		//processHandle = 0;
+		//SetEvent(Event);
 	}
-	//else log(...)
+	else
+		log(msgs[10]);
+
 	SetEvent(generalEvent);
 }
 
 void Process::resume() {
 
 	WaitForSingleObject(generalEvent, INFINITE);
+
 	if (status == Stopped) {
+
+		//WaitForSingleObject(stopResumeEvent, INFINITE);
 		startRoutine();
 		status = IsWorking;
 		log(msgs[3]);
 		onProcManualResume();
+		SetEvent(stopResumeEvent);
 	}
-	//else log(attempt...);
+	else
+		log(msgs[11]);
+
 	SetEvent(generalEvent);
-	SetEvent(stopResumeEvent);
 }
 
 void Process::restart() {
@@ -176,6 +191,10 @@ void Process::restart() {
 	status = IsWorking;
 	log(msgs[7]);
 	SetEvent(generalEvent);
+}
+
+int Process::getId() const {
+	return id;
 }
 
 DWORD Process::getProcessID() const { 
@@ -199,7 +218,8 @@ LPTSTR Process::getStatus() const {
 
 tstring Process::getInfo() const {
 	tstringstream tstream;
-	tstream << _T(" [ pid: ") << (getProcessID());
+	tstream << _T(" [ id: ") << setfill(_T(' ')) << setw(4) << getId();
+	tstream << _T(" ] [ pid: ") << setfill(_T(' ')) << setw(6) << getProcessID();
 	tstream << _T(" ] [ handle: 0x") << getProcessHandle();
 	tstream << _T(" ] [ status: ") << getStatus();
 	tstream << _T(" ] [ cmd: ") << getCommandLine() << _T(" ] ") << std::flush;
@@ -210,15 +230,14 @@ tstring Process::getInfo() const {
 Process::~Process() {
 
 	log(msgs[1]);
-	
-	//activeProcPids.erase(processID);
-	//printSet();
 
 	//WaitForSingleObject(watchingThread, INFINITE);
 	TerminateThread(watchingThread, 0);
 	CloseHandle(watchingThread);
 
+	//WaitForSingleObject(generalEvent, INFINITE);
 	CloseHandle(generalEvent);
+	//WaitForSingleObject(stopResumeEvent, INFINITE);
 	CloseHandle(stopResumeEvent);
 	closeRoutine();
 	onProcManualShutdown();

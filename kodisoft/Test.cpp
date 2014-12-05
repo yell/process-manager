@@ -37,6 +37,13 @@ using std::ofstream;
 
 void m(const char * s) { std::cout << s << std::endl; }
 
+static DWORD WINAPI yo(void * arg) {
+
+	Process f;
+	Sleep(1000);
+	return 0;
+}
+
 
 int main() {
 
@@ -48,16 +55,35 @@ int main() {
 		/*Logger * p = new FileLogger (string("log.txt"));
 		p->log(string("brand new msg"));
 		delete p;*/
+		
+		//HANDLE h = CreateThread(NULL, 0, yo, NULL, 0, NULL);
 
-		Process q;
-		Process p(q.getProcessID());
-		Process r(q.getProcessID());
-		//Process uTorrent(6196, new ConsoleLogger());
+	/*	Process *p[10];
+		for (int i = 0; i < 10; i++)
+			p[i] = new Process();*/
+
+
+		/*Process p(q.getProcessID());
+		Process r(q.getProcessID());*/
+
+		Process uTorrent(51285, new ConsoleLogger());
 		//Process flux(1900 ,new ConsoleLogger());
 
+		//Process p;// (new ConsoleLogger());
 
+		/*std::getchar();
+		p.stop();
+		p.stop();
 		std::getchar();
-		
+		p.resume();
+		p.resume();*/
+		std::getchar();
+
+	/*	for (int i = 0; i < 10; i++)
+			delete p[i];
+*/
+		//CloseHandle(h);
+
 	/*	for (int i = 0; i < 100; i++) {
 			p.restart();
 			Sleep(100);

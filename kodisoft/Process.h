@@ -3,20 +3,20 @@
 
 #include <windows.h>
 #include <memory>
-#include <set>
 
+#include "Macro.h"
 #include "Callback.h"
 #include "Logger.h"
 #include "OpenById.h"
 
-using std::string;
-using std::wstring;
 using std::unique_ptr;
-using std::set;
 
 class Process {
 
 	private:
+		static int count;
+
+		int id;
 		DWORD  processID;
 		HANDLE processHandle;
 
@@ -36,8 +36,6 @@ class Process {
 		bool isStillActive() const;
 		void startRoutine();
 		void closeRoutine();
-		
-		//static LPTSTR defaultPath;
 
 		Process & operator = (const Process &);
 		Process(const Process &);
@@ -50,10 +48,13 @@ class Process {
 		Process(Logger *);
 		Process();
 
+		void switchLogger(Logger *);
+
 		void stop();
 		void resume();
 		void restart();
 
+		int getId() const;
 		DWORD  getProcessID() const;
 		HANDLE getProcessHandle() const;
 		LPTSTR getCommandLine() const;
@@ -66,8 +67,6 @@ class Process {
 		Callback onProcManualResume;
 		Callback onProcManualRestart;
 		Callback onProcManualShutdown;
-
-		//switch Logger;
 
 		~Process();
 };

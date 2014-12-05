@@ -1,31 +1,29 @@
 #include <windows.h> // CreateEvent ...
-#include <iostream>  // cout
-#include <fstream>   // ofstream
-#include <string>    // cout << string
+#include <string> 
 #include <time.h>    // getTime
 #include <tchar.h>
 
+#include "Macro.h"
 #include "Logger.h"
 
-using std::cout;
-using std::wcout;
 using std::endl;
 using std::string;
 using std::wstring;
-using std::ofstream;
-using std::wofstream;
 using std::runtime_error;
 
 Logger::Logger() {
+
 	logEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 }
 
 Logger::~Logger() {
+
 	WaitForSingleObject(logEvent, INFINITE);
 	CloseHandle(logEvent);
 }
 
 tstring Logger::getTime() {
+
 	string timeStr;
 	time_t rawTime;
 	time(&rawTime);

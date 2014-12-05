@@ -24,6 +24,9 @@
     <ClInclude Include="Process.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Macro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="OpenById.h">
       <Filter>Header Files</Filter>
     </ClInclude>

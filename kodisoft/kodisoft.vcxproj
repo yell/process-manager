@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="Callback.h" />
     <ClInclude Include="Logger.h" />
+    <ClInclude Include="Macro.h" />
     <ClInclude Include="OpenById.h" />
     <ClInclude Include="Process.h" />
   </ItemGroup>
