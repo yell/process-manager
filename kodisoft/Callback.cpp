@@ -15,6 +15,11 @@ Callback::Callback(const Callback & c) {
 	callback = c.callback;
 }
 
+bool Callback::isEmpty() const {
+
+	return empty;
+}
+
 void Callback::set(function<void()> callback) { 
 
 	empty = false;
@@ -25,11 +30,6 @@ void Callback::reset() {
 
 	empty = true;
 	callback = [](){}; 
-}
-
-bool Callback::isEmpty() const {
-
-	return empty;
 }
 
 Callback & Callback::operator = (const Callback & c) { 

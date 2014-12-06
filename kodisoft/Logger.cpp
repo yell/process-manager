@@ -11,11 +11,6 @@ using std::setw;
 using std::setfill;
 using std::runtime_error;
 
-Logger::Logger() {
-
-	logEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
-}
-
 tstring Logger::getTime() {
 
 	SYSTEMTIME st;
@@ -34,12 +29,17 @@ tstring Logger::getTime() {
 	return tstream.str();
 }
 
-void Logger::log(tstring & str) {
+Logger::Logger() {
+
+	logEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+}
+
+void Logger::log(tstring & tstr) {
 
 	WaitForSingleObject(logEvent, INFINITE);
 	
 	tstringstream tstream;
-	tstream << _T(" [ ") << getTime() << _T(" ] ") << str << flush;
+	tstream << _T(" [ ") << getTime() << _T(" ] ") << tstr << flush;
 	logRoutine(tstream.str());
 
 	SetEvent(logEvent);
@@ -53,14 +53,21 @@ Logger::~Logger() {
 
 ConsoleLogger::ConsoleLogger() {}
 
-void ConsoleLogger::logRoutine(tstring & str) {
+ConsoleLogger::ConsoleLogger(const ConsoleLogger & c) {}
 
-	tout << str << endl;
+void ConsoleLogger::logRoutine(tstring & tstr) {
+
+	tout << tstr << endl;
 }
 
 tstring ConsoleLogger::getInfo() const {
 
 	return tstring(_T("ConsoleLogger"));
+}
+
+ConsoleLogger & ConsoleLogger::operator = (const ConsoleLogger & c) {
+
+	return *this;
 }
 
 ConsoleLogger::~ConsoleLogger() {}
@@ -72,9 +79,16 @@ FileLogger::FileLogger(tstring & fileName) : fileName(fileName) {
 		throw(runtime_error("Logger: Unable to open the file"));
 }
 
-void FileLogger::logRoutine(tstring & str) {
+FileLogger::FileLogger() : FileLogger(tstring(_T("log.txt"))) {}
 
-	tfout << str << endl;
+FileLogger::FileLogger(const FileLogger & f) : fileName(f.fileName){
+
+	tfout.open(fileName, std::ios_base::out | std::ios_base::app);
+}
+
+void FileLogger::logRoutine(tstring & tstr) {
+
+	tfout << tstr << endl;
 }
 
 tstring FileLogger::getInfo() const {
@@ -82,6 +96,16 @@ tstring FileLogger::getInfo() const {
 	tstringstream tstream;
 	tstream << _T("FileLogger(\"") << fileName << _T("\")") << flush;
 	return tstream.str();
+}
+
+FileLogger & FileLogger::operator = (const FileLogger & f) {
+
+	if (&f == this)
+		return *this;
+	
+	tfout.close();
+	tfout.open(fileName = f.fileName, std::ios_base::out | std::ios_base::app);
+	return *this;
 }
 
 FileLogger::~FileLogger() {

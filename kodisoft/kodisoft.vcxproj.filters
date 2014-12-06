@@ -27,7 +27,7 @@
     <ClInclude Include="Macro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OpenById.h">
+    <ClInclude Include="OpenByPid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClCompile Include="Test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OpenById.cpp">
+    <ClCompile Include="OpenByPid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

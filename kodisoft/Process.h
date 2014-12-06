@@ -7,7 +7,7 @@
 #include "Macro.h"
 #include "Callback.h"
 #include "Logger.h"
-#include "OpenById.h"
+#include "OpenByPid.h"
 
 using std::unique_ptr;
 
@@ -15,22 +15,22 @@ class Process {
 
 	private:
 		static int count;
-		bool       killAtTheEnd;
-		int        monitorId;
-		DWORD      processId;
-		DWORD      threadId;     // for PostThreadMessage		
-		HANDLE     processHandle;
-		HANDLE     watchingThread;
-		HANDLE     generalEvent;
-		tstring    commandLine;
+		bool killAtTheEnd;
+		int monitorId;
+		DWORD processId;
+		DWORD threadId;     // for PostThreadMessage		
+		HANDLE processHandle;
+		HANDLE watchingThread;
+		HANDLE generalEvent;
+		tstring commandLine;
 		unique_ptr<Logger> logger;
 		enum Status { IsWorking, Stopped, Restarting, Finishing } status;
 		
 		static DWORD WINAPI watchingThreadFunc(void *);
-		void log(tstring &) const;
 		bool isStillActive() const;
 		void startRoutine();
 		void closeRoutine();
+		void log(tstring &) const;
 
 		Process & operator = (const Process &);
 		Process(const Process &);
@@ -56,7 +56,7 @@ class Process {
 
 		bool isKillAtTheEnd() const;
 		int getMonitorId() const;
-		DWORD  getProcessId() const;
+		DWORD getProcessId() const;
 		HANDLE getProcessHandle() const;
 		tstring getCommandLine() const;
 		tstring getStatus() const;

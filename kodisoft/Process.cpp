@@ -12,16 +12,7 @@ using std::flush;
 using std::setw;
 using std::runtime_error;
 
-
 int Process::count;
-
-void Process::log(tstring & str) const {
-
-	tstringstream tstream;
-	tstream << _T("\n") << setw(18) << _T("message: ") << str << _T("\n") << getInfo() << endl;
-
-	logger->log(tstream.str());
-}
 
 DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
@@ -31,8 +22,8 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
 		WaitForMultipleObjects(2, h, TRUE, 0);
 
-		if (((Process*)arg)->status == IsWorking && !(((Process*)arg)->isStillActive())) {	
-			
+		if (((Process*)arg)->status == IsWorking && !(((Process*)arg)->isStillActive())) {
+
 			((Process*)arg)->status = Restarting;
 			((Process*)arg)->log(tstring(_T("crashed. restarting ...")));
 			((Process*)arg)->onProcCrash();
@@ -43,11 +34,9 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 			((Process*)arg)->status = IsWorking;
 			((Process*)arg)->log(tstring(_T("restarted after crash")));
 			((Process*)arg)->onProcStart();
-		}	
-
+		}
 		SetEvent(((Process*)arg)->generalEvent);
 	}
-
 	return 0;
 }
 
@@ -87,8 +76,15 @@ void Process::closeRoutine() {
 	}
 }
 
-Process::Process(tstring & cmd, Logger * logger, bool k) : 
-	commandLine(cmd), logger(logger), killAtTheEnd(k), monitorId(++count) {
+void Process::log(tstring & tstr) const {
+
+	tstringstream tstream;
+	tstream << _T("\n") << setw(18) << _T("message: ") << tstr << _T("\n") << getInfo() << endl;
+	logger->log(tstream.str());
+}
+
+Process::Process(tstring & commandLine, Logger * logger, bool killAtTheEnd) :
+	 commandLine(commandLine), logger(logger), killAtTheEnd(killAtTheEnd), monitorId(++count) {
 
 	status = IsWorking;
 	startRoutine();
@@ -97,52 +93,32 @@ Process::Process(tstring & cmd, Logger * logger, bool k) :
 	log(tstring(_T("started")));
 }
 
-Process::Process(tstring & cmd, Logger * logger) : 
-	 Process(cmd, logger, false) {}
+Process::Process(tstring & commandLine, Logger * logger) : 
+	 Process(commandLine, logger, false) {}
 
-Process::Process(Logger * logger, bool k) : 
-	 Process(tstring(_T("calc")), logger, k) {}
+Process::Process(Logger * logger, bool killAtTheEnd) :
+	 Process(tstring(_T("calc")), logger, killAtTheEnd) {}
 
-Process::Process(tstring & cmd, bool k) : 
-	 Process(cmd, new FileLogger(tstring(_T("log.txt"))), false) {}
+Process::Process(tstring & commandLine, bool killAtTheEnd) :
+	 Process(commandLine, new FileLogger(), killAtTheEnd) {}
 
-Process::Process(tstring & cmd) : 
-	 Process(cmd, new FileLogger(tstring(_T("log.txt"))), false) {}
+Process::Process(tstring & commandLine) : 
+	 Process(commandLine, new FileLogger(), false) {}
 
 Process::Process(Logger * logger) : 
 	 Process(tstring(_T("calc")), logger, false) {}
 
 Process::Process() : 
-	 Process(tstring(_T("calc")), new FileLogger(tstring(_T("log.txt"))), false) {}
+	 Process(tstring(_T("calc")), new FileLogger(), false) {}
 
 Process::Process(DWORD pid, Logger * logger) : 
 	 Process(pid, logger, false) {}
 
-Process::Process(DWORD pid, bool k) : 
-	 Process(pid, new FileLogger(tstring(_T("log.txt"))), k) {}
+Process::Process(DWORD pid, bool killAtTheEnd) :
+	 Process(pid, new FileLogger(), killAtTheEnd) {}
 
 Process::Process(DWORD pid) : 
-	 Process(pid, new FileLogger(tstring(_T("log.txt"))), false) {}
-
-
-void Process::switchLogger(Logger * logger) {
-
-	tstringstream tstream;
-	tstream << _T("switched logger to ") << logger->getInfo() << flush;
-	log(tstream.str());
-	
-	tstring prev = this->logger->getInfo();
-	this->logger.reset(logger);
-	
-	tstream.str(_T(""));
-	tstream << _T("continuing logging after ") << prev << flush;
-	log(tstream.str());
-}
-
-void Process::switchLogger() {
-
-	switchLogger(new FileLogger(tstring(_T("log.txt"))));
-}
+	 Process(pid, new FileLogger(), false) {}
 
 void Process::stop() {
 
@@ -150,8 +126,8 @@ void Process::stop() {
 
 	if (status == IsWorking) {
 
-		closeRoutine();
 		status = Stopped;
+		closeRoutine();
 		log(tstring(_T("manually stopped")));
 		onProcManualStop();
 	}
@@ -194,6 +170,25 @@ void Process::restart() {
 	onProcManualRestart();
 
 	SetEvent(generalEvent);
+}
+
+void Process::switchLogger(Logger * logger) {
+
+	tstringstream tstream;
+	tstream << _T("switched logger to ") << logger->getInfo() << flush;
+	log(tstream.str());
+
+	tstring prev = this->logger->getInfo();
+	this->logger.reset(logger);
+
+	tstream.str(_T(""));
+	tstream << _T("continuing logging after ") << prev << flush;
+	log(tstream.str());
+}
+
+void Process::switchLogger() {
+
+	switchLogger(new FileLogger(tstring(_T("log.txt"))));
 }
 
 bool Process::isKillAtTheEnd() const {
@@ -264,8 +259,8 @@ Process::~Process() {
 
 	if (killAtTheEnd) {
 		log(tstring(_T("manually shutdowned")));
-		onProcManualShutdown();
 		closeRoutine();
+		onProcManualShutdown();
 	}
 
 	log(tstring(_T("finished")));

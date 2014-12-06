@@ -1,0 +1,80 @@
+ [ 06-12-2014 15:43:55.554 ] 
+         message: continuing logging after FileLogger("log.txt")
+      monitor id: 2
+             pid: 4652
+          handle: 0x000000D8
+          status: is working
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:43:56.902 ] 
+         message: an attempt to resume active process
+      monitor id: 2
+             pid: 4652
+          handle: 0x000000D8
+          status: is working
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:43:57.942 ] 
+         message: manually stopped
+      monitor id: 2
+             pid: 4652
+          handle: 0x000000D8
+          status: is stopped
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:43:57.944 ] 
+         message: an attempt to stop already stopped process
+      monitor id: 2
+             pid: 4652
+          handle: 0x000000D8
+          status: is stopped
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:43:58.878 ] 
+         message: manually restarting ...
+      monitor id: 2
+             pid: 4652
+          handle: 0x000000D8
+          status: restarting
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:43:58.880 ] 
+         message: manually restarted
+      monitor id: 2
+             pid: 3752
+          handle: 0x000000C8
+          status: is working
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:44:00.974 ] 
+         message: manually shutdowned
+      monitor id: 2
+             pid: 3752
+          handle: 0x000000C8
+          status: finishing
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+
+ [ 06-12-2014 15:44:00.976 ] 
+         message: finished
+      monitor id: 2
+             pid: 3752
+          handle: 0x000000C8
+          status: finishing
+    command line: notepad
+ kill at the end: true
+          logger: FileLogger("log2.txt")
+

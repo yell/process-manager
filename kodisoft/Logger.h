@@ -8,8 +8,8 @@
 class Logger
 {
 	private:
-		tstring getTime();
 		HANDLE logEvent;
+		tstring getTime();
 
 	public:
 		Logger();
@@ -23,8 +23,12 @@ class ConsoleLogger : public Logger
 {
 	public:
 		ConsoleLogger();
+		ConsoleLogger(const ConsoleLogger &);
+
 		void logRoutine(tstring &);
 		tstring getInfo() const;
+		
+		ConsoleLogger & operator = (const ConsoleLogger &);
 		~ConsoleLogger();
 };
 
@@ -36,8 +40,13 @@ class FileLogger : public Logger
 
 	public:
 		FileLogger(tstring &);
+		FileLogger();
+		FileLogger(const FileLogger &);
+
 		void logRoutine(tstring &);
 		tstring getInfo() const;
+
+		FileLogger & operator = (const FileLogger &);
 		~FileLogger();
 };
 

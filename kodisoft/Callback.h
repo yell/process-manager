@@ -17,9 +17,9 @@ class Callback {
 		Callback();
 		Callback(const Callback &);
 
+		bool isEmpty() const;
 		void set(function<void()>);
 		void reset(void);
-		bool isEmpty() const;
 
 		Callback & operator = (const Callback &);
 		~Callback();

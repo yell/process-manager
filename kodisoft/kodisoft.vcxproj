@@ -14,13 +14,13 @@
     <ClInclude Include="Callback.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Macro.h" />
-    <ClInclude Include="OpenById.h" />
+    <ClInclude Include="OpenByPid.h" />
     <ClInclude Include="Process.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Callback.cpp" />
     <ClCompile Include="Logger.cpp" />
-    <ClCompile Include="OpenById.cpp" />
+    <ClCompile Include="OpenByPid.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
