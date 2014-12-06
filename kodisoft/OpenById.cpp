@@ -1,27 +1,19 @@
 #include <tchar.h>
-
 #include <memory>
 
+#include "Macro.h"
 #include "OpenById.h"
 #include "Process.h"
 
-//#define _CRTDBG_MAP_ALLOC
-//#include <stdlib.h>
-//#include <crtdbg.h>
-//_CrtMemState S1, S2, S3;
-//_CrtMemCheckpoint(&S2);
-//if (_CrtMemDifference(&S3, &S1, &S2))
-//_CrtMemDumpStatistics(&S3);
-
+using std::flush;
 using std::runtime_error;
 using std::unique_ptr;
 
-
-
-Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), id(++count) {
+Process::Process(DWORD pid, Logger * logger, bool k) : 
+	processId(pid), logger(logger), killAtTheEnd(k), monitorId(++count) {
 
 	#ifndef _UNICODE
-	throw(runtime_error("\nProcess: Unable to retrieve command line with Multi-Byte Character Set (use Unicode instead)"));
+	throw(runtime_error("\nProcess: Unable to retrieve command line in multi-byte character mode (use unicode instead)"));
 	#endif
 
 	// open the process
@@ -52,6 +44,9 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), i
 	DWORD ppSize = CommandLineOffset + 16;
 	unique_ptr<BYTE> pp(new BYTE [ppSize]);
 	ZeroMemory(&(*pp), ppSize);
+
+	//LPTSTR cmd;
+	unique_ptr<TCHAR> cmd;
 
 	if (wow) {
 		// we're running as a 32-bit process in a 64-bit OS
@@ -86,9 +81,9 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), i
 		// read CommandLine
 		UNICODE_STRING_WOW64* pCommandLine = (UNICODE_STRING_WOW64*)(&(*pp) + CommandLineOffset);
 		
-		commandLine = new TCHAR[pCommandLine->MaximumLength + 1];
+		cmd.reset(new TCHAR[pCommandLine->MaximumLength + 1]);
 
-		err = read(processHandle, pCommandLine->Buffer, commandLine, pCommandLine->MaximumLength, NULL);
+		err = read(processHandle, pCommandLine->Buffer, &(*cmd), pCommandLine->MaximumLength, NULL);
 		if (err != 0) {
 			CloseHandle(processHandle);
 			throw(runtime_error("\nProcess: NtWow64ReadVirtualMemory64 Parameters failed"));
@@ -123,13 +118,17 @@ Process::Process(DWORD pid, Logger * logger) : processID(pid), logger(logger), i
 		// read CommandLine
 		UNICODE_STRING* pCommandLine = (UNICODE_STRING*)(&(*pp) + CommandLineOffset);
 		
-		commandLine = new TCHAR[pCommandLine->MaximumLength + 1];
+		cmd.reset(new TCHAR[pCommandLine->MaximumLength + 1]);
 
-		if (!ReadProcessMemory(processHandle, pCommandLine->Buffer, commandLine, pCommandLine->MaximumLength, NULL)) {
+		if (!ReadProcessMemory(processHandle, pCommandLine->Buffer, &(*cmd), pCommandLine->MaximumLength, NULL)) {
 			CloseHandle(processHandle);
 			throw(runtime_error("\nProcess: ReadProcessMemory Parameters failed"));
 		}
 	}
+
+	tstringstream tstream;
+	tstream << &(*cmd) << flush;
+	commandLine = tstream.str();
 
 	status = IsWorking;
 	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);

@@ -1,0 +1,176 @@
+ [ Sat Dec 06 01:30:13 2014 ] msg: started
+                   id: 1
+                  pid: 7832
+             handle: 0x00000084
+               status: is working
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:30:14 2014 ] msg: crashed. restarting ...
+                   id: 1
+                  pid: 7832
+             handle: 0x00000084
+               status: restarting
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:30:14 2014 ] msg: restarted after crash
+                   id: 1
+                  pid: 5220
+             handle: 0x000000A4
+               status: is working
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:30:16 2014 ] msg: manually restarting ...
+                   id: 1
+                  pid: 5220
+             handle: 0x000000A4
+               status: restarting
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:30:16 2014 ] msg: manually restarted
+                   id: 1
+                  pid: 9424
+             handle: 0x000000B8
+               status: is working
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:30:17 2014 ] msg: finished
+                   id: 1
+                  pid: 9424
+             handle: 0x000000B8
+               status: finishing
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:31:17 2014 ] msg: started
+                   id: 1
+                  pid: 7392
+               handle: 0x00000084
+               status: is working
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:31:18 2014 ] msg: manually restarting ...
+                   id: 1
+                  pid: 7392
+               handle: 0x00000084
+               status: restarting
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:31:18 2014 ] msg: manually restarted
+                   id: 1
+                  pid: 9924
+               handle: 0x000000A0
+               status: is working
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:31:20 2014 ] msg: finished
+                   id: 1
+                  pid: 9924
+               handle: 0x000000A0
+               status: finishing
+      kill at the end: false
+                  cmd: calc
+               logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:37:30 2014 ] msg: started
+                id: 1
+               pid: 8648
+            handle: 0x0000007C
+            status: is working
+      command line: calc
+   kill at the end: false
+            logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:37:31 2014 ] msg: manually restarting ...
+                id: 1
+               pid: 8648
+            handle: 0x0000007C
+            status: restarting
+      command line: calc
+   kill at the end: false
+            logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:37:31 2014 ] msg: manually restarted
+                id: 1
+               pid: 14288
+            handle: 0x000000A0
+            status: is working
+      command line: calc
+   kill at the end: false
+            logger: FileLogger("log.txt")
+
+ [ Sat Dec 06 01:37:32 2014 ] msg: finished
+                id: 1
+               pid: 14288
+            handle: 0x000000A0
+            status: finishing
+      command line: calc
+   kill at the end: false
+            logger: FileLogger("log.txt")
+
+ [ 06-12-2014 02:11:05.828 ] 
+           message: continuing logging after ConsoleLogger
+                id: 1
+               pid: 12828
+            handle: 0x00000020
+            status: is working
+      command line: calc
+   kill at the end: true
+            logger: FileLogger("log.txt")
+
+ [ 06-12-2014 02:11:10.094 ] 
+           message: crashed. restarting ...
+                id: 1
+               pid: 12828
+            handle: 0x00000020
+            status: restarting
+      command line: calc
+   kill at the end: true
+            logger: FileLogger("log.txt")
+
+ [ 06-12-2014 02:11:10.097 ] 
+           message: restarted after crash
+                id: 1
+               pid: 11680
+            handle: 0x00000094
+            status: is working
+      command line: calc
+   kill at the end: true
+            logger: FileLogger("log.txt")
+
+ [ 06-12-2014 02:11:12.428 ] 
+           message: manually shutdowned
+                id: 1
+               pid: 11680
+            handle: 0x00000094
+            status: finishing
+      command line: calc
+   kill at the end: true
+            logger: FileLogger("log.txt")
+
+ [ 06-12-2014 02:11:12.430 ] 
+           message: finished
+                id: 1
+               pid: 11680
+            handle: 0x00000094
+            status: finishing
+      command line: calc
+   kill at the end: true
+            logger: FileLogger("log.txt")
+

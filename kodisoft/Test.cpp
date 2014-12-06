@@ -23,14 +23,6 @@ using std::ofstream;
 
 void m(const char * s) { std::cout << s << std::endl; }
 
-static DWORD WINAPI yo(void * arg) {
-
-	Process f;
-	Sleep(1000);
-	return 0;
-}
-
-
 int main() {
 
 	try{
@@ -51,11 +43,25 @@ int main() {
 		/*Process p(q.getProcessID());
 		Process r(q.getProcessID());*/
 
-		Process p(11852);
-		p.stop();
-		std::getchar();
-		p.restart();
-		std::getchar();
+		Logger * l = new ConsoleLogger();
+		l->log(tstring(_T("l::yo")));
+
+		Process p(l, true);
+		//std::getchar();
+		//p.restart();
+
+		//p.onProcStart.set([&p]() { p.stop(); });
+		//p.onProcManualStop.set([&p]() { p.resume(); });
+
+		//p.onProcManualShutdown = p.onProcCrash;
+
+		//p.stop();
+
+		//std::getchar();
+		//p.stop();
+		/*std::getchar();
+		p.switchLogger();
+		std::getchar();*/
 
 		//Process flux(1900 ,new ConsoleLogger());
 		//uTorrent.stop();

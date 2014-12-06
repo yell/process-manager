@@ -1,15 +1,14 @@
-#include <windows.h> // CreateEvent ...
-#include <string> 
-#include <time.h>    // getTime
+#include <windows.h>
 #include <tchar.h>
+#include <iomanip>
 
 #include "Macro.h"
 #include "Logger.h"
 
 using std::endl;
 using std::flush;
-using std::string;
-using std::wstring;
+using std::setw;
+using std::setfill;
 using std::runtime_error;
 
 Logger::Logger() {
@@ -17,26 +16,22 @@ Logger::Logger() {
 	logEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 }
 
-Logger::~Logger() {
-
-	WaitForSingleObject(logEvent, INFINITE);
-	CloseHandle(logEvent);
-}
-
 tstring Logger::getTime() {
 
-	string timeStr;
-	time_t rawTime;
-	time(&rawTime);
-	timeStr = ctime(&rawTime);
-	string s =  timeStr.substr(0, timeStr.size() - 1);
+	SYSTEMTIME st;
+	GetLocalTime(&st);
 
-	#ifdef _UNICODE
-		wstring w(s.begin(), s.end());
-		return w;
-	#else
-		return s;
-	#endif
+	tstringstream tstream;
+	tstream << setfill(_T('0')) << setw(2) << st.wDay << _T("-");
+	tstream << setfill(_T('0')) << setw(2) << st.wMonth << _T("-");
+	tstream << st.wYear << _T(" ");
+
+	tstream << setfill(_T('0')) << setw(2) << st.wHour << _T(":");
+	tstream << setfill(_T('0')) << setw(2) << st.wMinute << _T(":");
+	tstream << setfill(_T('0')) << setw(2) << st.wSecond << _T(".");
+	tstream << setfill(_T('0')) << setw(3) << st.wMilliseconds << flush;
+
+	return tstream.str();
 }
 
 void Logger::log(tstring & str) {
@@ -45,32 +40,40 @@ void Logger::log(tstring & str) {
 	
 	tstringstream tstream;
 	tstream << _T(" [ ") << getTime() << _T(" ] ") << str << flush;
-	tstring t(tstream.str());
-		
-	logRoutine(t);
+	logRoutine(tstream.str());
 
 	SetEvent(logEvent);
+}
+
+Logger::~Logger() {
+
+	WaitForSingleObject(logEvent, INFINITE);
+	CloseHandle(logEvent);
 }
 
 ConsoleLogger::ConsoleLogger() {}
 
 void ConsoleLogger::logRoutine(tstring & str) {
+
 	tout << str << endl;
 }
 
 tstring ConsoleLogger::getInfo() const {
+
 	return tstring(_T("ConsoleLogger"));
 }
 
 ConsoleLogger::~ConsoleLogger() {}
 
 FileLogger::FileLogger(tstring & fileName) : fileName(fileName) {
+
 	tfout.open(fileName, std::ios_base::out | std::ios_base::app);
 	if (!tfout.good())
 		throw(runtime_error("Logger: Unable to open the file"));
 }
 
 void FileLogger::logRoutine(tstring & str) {
+
 	tfout << str << endl;
 }
 
@@ -78,11 +81,10 @@ tstring FileLogger::getInfo() const {
 	
 	tstringstream tstream;
 	tstream << _T("FileLogger(\"") << fileName << _T("\")") << flush;
-	tstring t(tstream.str());
-	
-	return t;
+	return tstream.str();
 }
 
 FileLogger::~FileLogger() {
+
 	tfout.close();
 }

@@ -1,0 +1,12 @@
+ [ Sat Dec 06 01:18:39 2014 ] [ msg: started ]
+ [ id: 1 ] [ pid: 14280 ] [ handle: 0x00000080 ] [ status: is working ] [ cmd: "C:\Users\monsta-hd\AppData\Roaming\uTorrent\uTorrent.exe"  ] [ kill at the end: false ] [ logger: FileLogger("log.txt") ] 
+
+ [ Sat Dec 06 01:18:40 2014 ] [ msg: manually restarting ... ]
+ [ id: 1 ] [ pid: 14280 ] [ handle: 0x00000080 ] [ status: restarting ] [ cmd: "C:\Users\monsta-hd\AppData\Roaming\uTorrent\uTorrent.exe"  ] [ kill at the end: false ] [ logger: FileLogger("log.txt") ] 
+
+ [ Sat Dec 06 01:18:40 2014 ] [ msg: manually restarted ]
+ [ id: 1 ] [ pid: 10932 ] [ handle: 0x00000020 ] [ status: is working ] [ cmd: "C:\Users\monsta-hd\AppData\Roaming\uTorrent\uTorrent.exe"  ] [ kill at the end: false ] [ logger: FileLogger("log.txt") ] 
+
+ [ Sat Dec 06 01:18:43 2014 ] [ msg: finished ]
+ [ id: 1 ] [ pid: 10932 ] [ handle: 0x00000020 ] [ status: finishing ] [ cmd: "C:\Users\monsta-hd\AppData\Roaming\uTorrent\uTorrent.exe"  ] [ kill at the end: false ] [ logger: FileLogger("log.txt") ] 
+

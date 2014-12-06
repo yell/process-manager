@@ -5,7 +5,6 @@
 
 #include "Macro.h"
 
-
 class Logger
 {
 	private:

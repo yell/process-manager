@@ -15,26 +15,19 @@ class Process {
 
 	private:
 		static int count;
-
-		int id;
-		DWORD  processID;
-		HANDLE processHandle;
-
-		HANDLE watchingThread;
-		DWORD threadId;
-
-		HANDLE generalEvent;
-	
-		LPTSTR commandLine;
-
-		enum Status { IsWorking, Stopped, Restarting, Finishing } status;
-
+		bool       killAtTheEnd;
+		int        monitorId;
+		DWORD      processId;
+		DWORD      threadId;     // for PostThreadMessage		
+		HANDLE     processHandle;
+		HANDLE     watchingThread;
+		HANDLE     generalEvent;
+		tstring    commandLine;
 		unique_ptr<Logger> logger;
-
-		void log(tstring &) const;
-
+		enum Status { IsWorking, Stopped, Restarting, Finishing } status;
+		
 		static DWORD WINAPI watchingThreadFunc(void *);
-
+		void log(tstring &) const;
 		bool isStillActive() const;
 		void startRoutine();
 		void closeRoutine();
@@ -43,26 +36,32 @@ class Process {
 		Process(const Process &);
 
 	public:	
-		Process(DWORD, Logger *);
-		Process(LPTSTR, Logger *);
-		Process(DWORD);
-		Process(LPTSTR);
+		Process(tstring &, Logger *, bool);
+		Process(tstring &, Logger *);
+		Process(Logger *, bool);
+		Process(tstring &, bool);
+		Process(tstring &);
 		Process(Logger *);
 		Process();
-
-		void switchLogger(Logger *);
+		Process(DWORD, Logger *, bool);
+		Process(DWORD, Logger *);
+		Process(DWORD, bool);
+		Process(DWORD);
 
 		void stop();
 		void resume();
 		void restart();
+		void switchLogger(Logger *);
+		void switchLogger();
 
-		int getId() const;
-		DWORD  getProcessID() const;
+		bool isKillAtTheEnd() const;
+		int getMonitorId() const;
+		DWORD  getProcessId() const;
 		HANDLE getProcessHandle() const;
-		LPTSTR getCommandLine() const;
+		tstring getCommandLine() const;
 		tstring getStatus() const;
 		tstring getInfo() const;
-		tstring getLoggerInfo() const;
+		tstring getLoggerInfo() const;	
 
 		Callback onProcStart;
 		Callback onProcCrash;

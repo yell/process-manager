@@ -1,12 +1,15 @@
 #include <windows.h>
 #include <tchar.h>
-#include <iostream>
+#include <iomanip>
 
 #include "Macro.h"
 #include "Process.h"
 
 using std::endl;
+using std::boolalpha;
+using std::noboolalpha;
 using std::flush;
+using std::setw;
 using std::runtime_error;
 
 
@@ -15,10 +18,9 @@ int Process::count;
 void Process::log(tstring & str) const {
 
 	tstringstream tstream;
-	tstream << _T("[ msg: ") << str << _T(" ]\n") << getInfo() << _T("\n") << flush;
-	tstring t(tstream.str());
+	tstream << _T("\n") << setw(18) << _T("message: ") << str << _T("\n") << getInfo() << endl;
 
-	logger->log(t);
+	logger->log(tstream.str());
 }
 
 DWORD WINAPI Process::watchingThreadFunc(void * arg) {
@@ -29,8 +31,8 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
 		WaitForMultipleObjects(2, h, TRUE, 0);
 
-		if (((Process*)arg)->status == IsWorking && !(((Process*)arg)->isStillActive())) {
-
+		if (((Process*)arg)->status == IsWorking && !(((Process*)arg)->isStillActive())) {	
+			
 			((Process*)arg)->status = Restarting;
 			((Process*)arg)->log(tstring(_T("crashed. restarting ...")));
 			((Process*)arg)->onProcCrash();
@@ -42,8 +44,10 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 			((Process*)arg)->log(tstring(_T("restarted after crash")));
 			((Process*)arg)->onProcStart();
 		}	
+
 		SetEvent(((Process*)arg)->generalEvent);
 	}
+
 	return 0;
 }
 
@@ -57,24 +61,21 @@ bool Process::isStillActive() const {
 void Process::startRoutine() {
 
 	if (!isStillActive()) {
-		LPTSTR temp = new TCHAR[_tcslen(commandLine) + 1];
-		_tcscpy(temp, commandLine);
+		
+		tstring t(commandLine);
+		LPTSTR temp = &t[0];
 
-		PROCESS_INFORMATION processInfo;
 		STARTUPINFO startInfo;
+		PROCESS_INFORMATION processInfo;
 
 		ZeroMemory(&startInfo, sizeof(startInfo));
 		ZeroMemory(&processInfo, sizeof(processInfo));
 
-		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo)) {
-			delete[] temp;
+		if (!CreateProcess(NULL, temp, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &processInfo))
 			throw(runtime_error("\nProcess: Unable to start process"));
-		}
 
 		processHandle = processInfo.hProcess;
-		processID = processInfo.dwProcessId;
-
-		delete[] temp;
+		processId = processInfo.dwProcessId;
 	}
 }
 
@@ -86,12 +87,8 @@ void Process::closeRoutine() {
 	}
 }
 
-Process::Process(LPTSTR cmd, Logger * logger) : logger(logger), id(++count) {
-
-	commandLine = new TCHAR[_tcslen(cmd) + 3];
-	commandLine[0] = _T('"'); 
-	_tcscpy(commandLine + 1, cmd);
-	lstrcat(commandLine, _T("\""));	
+Process::Process(tstring & cmd, Logger * logger, bool k) : 
+	commandLine(cmd), logger(logger), killAtTheEnd(k), monitorId(++count) {
 
 	status = IsWorking;
 	startRoutine();
@@ -100,13 +97,33 @@ Process::Process(LPTSTR cmd, Logger * logger) : logger(logger), id(++count) {
 	log(tstring(_T("started")));
 }
 
-Process::Process(DWORD pid) : Process(pid, new FileLogger(tstring(_T("log.txt")))) {}
+Process::Process(tstring & cmd, Logger * logger) : 
+	 Process(cmd, logger, false) {}
 
-Process::Process(LPTSTR cmd) : Process(cmd, new FileLogger(tstring(_T("log.txt")))) {}
+Process::Process(Logger * logger, bool k) : 
+	 Process(tstring(_T("calc")), logger, k) {}
 
-Process::Process(Logger * logger) : Process(_T("calc"), logger) {}
+Process::Process(tstring & cmd, bool k) : 
+	 Process(cmd, new FileLogger(tstring(_T("log.txt"))), false) {}
 
-Process::Process() : Process(new FileLogger(tstring(_T("log.txt")))) {}
+Process::Process(tstring & cmd) : 
+	 Process(cmd, new FileLogger(tstring(_T("log.txt"))), false) {}
+
+Process::Process(Logger * logger) : 
+	 Process(tstring(_T("calc")), logger, false) {}
+
+Process::Process() : 
+	 Process(tstring(_T("calc")), new FileLogger(tstring(_T("log.txt"))), false) {}
+
+Process::Process(DWORD pid, Logger * logger) : 
+	 Process(pid, logger, false) {}
+
+Process::Process(DWORD pid, bool k) : 
+	 Process(pid, new FileLogger(tstring(_T("log.txt"))), k) {}
+
+Process::Process(DWORD pid) : 
+	 Process(pid, new FileLogger(tstring(_T("log.txt"))), false) {}
+
 
 void Process::switchLogger(Logger * logger) {
 
@@ -115,12 +132,16 @@ void Process::switchLogger(Logger * logger) {
 	log(tstream.str());
 	
 	tstring prev = this->logger->getInfo();
-	
 	this->logger.reset(logger);
 	
 	tstream.str(_T(""));
 	tstream << _T("continuing logging after ") << prev << flush;
 	log(tstream.str());
+}
+
+void Process::switchLogger() {
+
+	switchLogger(new FileLogger(tstring(_T("log.txt"))));
 }
 
 void Process::stop() {
@@ -129,12 +150,10 @@ void Process::stop() {
 
 	if (status == IsWorking) {
 
-		status = Stopped;
-		onProcManualStop();
 		closeRoutine();
-		//processID = 0;
-		//processHandle = 0;
+		status = Stopped;
 		log(tstring(_T("manually stopped")));
+		onProcManualStop();
 	}
 	else
 		log(tstring(_T("an attempt to stop already stopped process")));
@@ -149,7 +168,6 @@ void Process::resume() {
 	if (status == Stopped) {
 
 		startRoutine();
-
 		status = IsWorking;
 		log(tstring(_T("manually resumed")));
 		onProcManualResume();
@@ -166,25 +184,31 @@ void Process::restart() {
 	
 	status = Restarting;
 	log(tstring(_T("manually restarting ...")));
-	onProcManualRestart();
-
+	
 	closeRoutine();
 	startRoutine();
 	
 	status = IsWorking;
 	log(tstring(_T("manually restarted")));
 
+	onProcManualRestart();
+
 	SetEvent(generalEvent);
 }
 
-int Process::getId() const {
+bool Process::isKillAtTheEnd() const {
 
-	return id;
+	return killAtTheEnd;
 }
 
-DWORD Process::getProcessID() const { 
+int Process::getMonitorId() const {
 
-	return processID;
+	return monitorId;
+}
+
+DWORD Process::getProcessId() const { 
+
+	return processId;
 }
 
 HANDLE Process::getProcessHandle() const { 
@@ -192,7 +216,7 @@ HANDLE Process::getProcessHandle() const {
 	return processHandle;
 }
 
-LPTSTR Process::getCommandLine() const { 
+tstring Process::getCommandLine() const { 
 
 	return commandLine; 
 }
@@ -211,15 +235,15 @@ tstring Process::getInfo() const {
 
 	tstringstream tstream;
 
-	tstream << _T(" [ id: ") << getId();
-	tstream << _T(" ] [ pid: ") << getProcessID();
-	tstream << _T(" ] [ handle: 0x") << getProcessHandle();
-	tstream << _T(" ] [ status: ") << getStatus();
-	tstream << _T(" ] [ cmd: ") << getCommandLine();
-	tstream << _T(" ] [ logger: ") << getLoggerInfo() << _T(" ] ") << flush;
+	tstream << setw(18) << _T("monitor id: ") << getMonitorId() << endl;
+	tstream << setw(18) << _T("pid: ") << getProcessId() << endl;
+	tstream << setw(20) << _T("handle: 0x") << getProcessHandle() << endl;
+	tstream << setw(18) << _T("status: ") << getStatus() << endl;
+	tstream << setw(18) << _T("command line: ") << getCommandLine() << endl;
+	tstream << setw(18) << _T("kill at the end: ") << boolalpha << isKillAtTheEnd() << noboolalpha << endl;
+	tstream << setw(18) << _T("logger: ") << getLoggerInfo() << flush;
 
-	tstring t(tstream.str());
-	return t;
+	return tstream.str();
 }
 
 tstring Process::getLoggerInfo() const {
@@ -230,8 +254,6 @@ tstring Process::getLoggerInfo() const {
 Process::~Process() {
 
 	status = Finishing;
-	log(tstring(_T("manually shutdowned")));
-	onProcManualShutdown();
 
 	PostThreadMessage(threadId, WM_QUIT, 0, 0);
 	WaitForSingleObject(watchingThread, INFINITE);
@@ -240,7 +262,11 @@ Process::~Process() {
 	WaitForSingleObject(generalEvent, INFINITE);
 	CloseHandle(generalEvent);
 
-	closeRoutine();
+	if (killAtTheEnd) {
+		log(tstring(_T("manually shutdowned")));
+		onProcManualShutdown();
+		closeRoutine();
+	}
 
-	delete[] commandLine;
+	log(tstring(_T("finished")));
 }
