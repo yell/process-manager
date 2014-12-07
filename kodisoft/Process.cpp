@@ -129,11 +129,11 @@ void Process::stop() {
 
 		status = STOPPED;
 		closeRoutine();
-		log(tstring(_T("manually STOPPED")));
+		log(tstring(_T("manually stopped")));
 		onProcManualStop();
 	}
 	else
-		log(tstring(_T("an attempt to stop already stpped process")));
+		log(tstring(_T("an attempt to stop already stopped process")));
 
 	SetEvent(processEvent);
 }
@@ -220,7 +220,7 @@ tstring Process::getCommandLine() const {
 tstring Process::getStatus() const {
 
 	tstring statusStr[] = { _T("is working"), 
-				_T("is STOPPED"), 
+				_T("is stopped"), 
 			        _T("restarting"),
 				_T("finishing")};
 	
