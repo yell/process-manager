@@ -112,7 +112,7 @@ Process::Process(DWORD pid, Logger * logger, bool killAtTheEnd) :
 	tstream << &(*cmd) << flush;
 	commandLine = tstream.str();
 
-	status = IsWorking;
+	status = IS_WORKING;
 	processEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
 	log(tstring(_T("started")));

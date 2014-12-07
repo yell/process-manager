@@ -11,6 +11,8 @@
 
 using std::unique_ptr;
 
+enum Status { IS_WORKING, STOPPED, RESTARTING, FINISHING };
+
 class Process {
 
 	private:
@@ -24,7 +26,7 @@ class Process {
 		HANDLE watchingThread;
 		tstring commandLine;
 		unique_ptr<Logger> logger;
-		enum Status { IsWorking, Stopped, Restarting, Finishing } status;
+		Status status;
 		
 		static DWORD WINAPI watchingThreadFunc(void *);
 		bool isStillActive() const;
