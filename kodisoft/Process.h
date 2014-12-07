@@ -18,10 +18,10 @@ class Process {
 		bool killAtTheEnd;
 		int monitorId;
 		DWORD processId;
-		DWORD threadId;     // for PostThreadMessage		
+		DWORD threadId;	// for PostThreadMessage		
 		HANDLE processHandle;
+		HANDLE processEvent;
 		HANDLE watchingThread;
-		HANDLE generalEvent;
 		tstring commandLine;
 		unique_ptr<Logger> logger;
 		enum Status { IsWorking, Stopped, Restarting, Finishing } status;

@@ -1,22 +1,23 @@
 #include <windows.h>
 #include <tchar.h>
 #include <iomanip>
+#include <iostream>
 
 #include "Macro.h"
 #include "Process.h"
 
-using std::endl;
+using std::runtime_error;
 using std::boolalpha;
 using std::noboolalpha;
-using std::flush;
 using std::setw;
-using std::runtime_error;
+using std::endl;
+using std::flush;
 
 int Process::count;
 
 DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
-	HANDLE h[2] = { ((Process*)arg)->processHandle, ((Process*)arg)->generalEvent };
+	HANDLE h[2] = { ((Process*)arg)->processHandle, ((Process*)arg)->processEvent };
 
 	while (((Process*)arg)->status != Finishing) {
 
@@ -35,7 +36,7 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 			((Process*)arg)->log(tstring(_T("restarted after crash")));
 			((Process*)arg)->onProcStart();
 		}
-		SetEvent(((Process*)arg)->generalEvent);
+		SetEvent(((Process*)arg)->processEvent);
 	}
 	return 0;
 }
@@ -88,7 +89,7 @@ Process::Process(tstring & commandLine, Logger * logger, bool killAtTheEnd) :
 
 	status = IsWorking;
 	startRoutine();
-	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	processEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, &threadId);
 	log(tstring(_T("started")));
 }
@@ -122,7 +123,7 @@ Process::Process(DWORD pid) :
 
 void Process::stop() {
 
-	WaitForSingleObject(generalEvent, INFINITE);
+	WaitForSingleObject(processEvent, INFINITE);
 
 	if (status == IsWorking) {
 
@@ -134,12 +135,12 @@ void Process::stop() {
 	else
 		log(tstring(_T("an attempt to stop already stopped process")));
 
-	SetEvent(generalEvent);
+	SetEvent(processEvent);
 }
 
 void Process::resume() {
 
-	WaitForSingleObject(generalEvent, INFINITE);
+	WaitForSingleObject(processEvent, INFINITE);
 
 	if (status == Stopped) {
 
@@ -151,12 +152,12 @@ void Process::resume() {
 	else
 		log(tstring(_T("an attempt to resume active process")));
 
-	SetEvent(generalEvent);
+	SetEvent(processEvent);
 }
 
 void Process::restart() {
 
-	WaitForSingleObject(generalEvent, INFINITE);
+	WaitForSingleObject(processEvent, INFINITE);
 	
 	status = Restarting;
 	log(tstring(_T("manually restarting ...")));
@@ -169,7 +170,7 @@ void Process::restart() {
 
 	onProcManualRestart();
 
-	SetEvent(generalEvent);
+	SetEvent(processEvent);
 }
 
 void Process::switchLogger(Logger * logger) {
@@ -254,8 +255,8 @@ Process::~Process() {
 	WaitForSingleObject(watchingThread, INFINITE);
 	CloseHandle(watchingThread);
 
-	WaitForSingleObject(generalEvent, INFINITE);
-	CloseHandle(generalEvent);
+	WaitForSingleObject(processEvent, INFINITE);
+	CloseHandle(processEvent);
 
 	if (killAtTheEnd) {
 		log(tstring(_T("manually shutdowned")));

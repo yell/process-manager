@@ -1,13 +1,14 @@
 #include <tchar.h>
 #include <memory>
+#include <iostream>
 
 #include "Macro.h"
 #include "OpenByPid.h"
 #include "Process.h"
 
-using std::flush;
 using std::runtime_error;
 using std::unique_ptr;
+using std::flush;
 
 Process::Process(DWORD pid, Logger * logger, bool killAtTheEnd) : 
 	 processId(pid), logger(logger), killAtTheEnd(killAtTheEnd), monitorId(++count) {
@@ -112,7 +113,7 @@ Process::Process(DWORD pid, Logger * logger, bool killAtTheEnd) :
 	commandLine = tstream.str();
 
 	status = IsWorking;
-	generalEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	processEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
 	log(tstring(_T("started")));
 }

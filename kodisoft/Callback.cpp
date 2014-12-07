@@ -2,6 +2,8 @@
 
 #include "Callback.h"
 
+using std::function;
+
 void Callback::operator() () const { 
 
 	callback(); 

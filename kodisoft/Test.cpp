@@ -1,20 +1,13 @@
+#include <Windows.h>
 #include <tchar.h>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-
 #include <cctype>
+#include <iostream>
 
 #include "Process.h"
 
-using std::cout;
-using std::wcout;
-using std::endl;
-using std::string;
-using std::ofstream;
-using std::getchar;
 using std::tolower;
+using std::cout;
+using std::endl;
 
 void pause(char * str) {
 	cout << str << endl;
@@ -47,7 +40,7 @@ int main() {
 		q.onProcStart.set([](){ cout << "\ncrash!" << std::flush; });
 		q.onProcCrash = q.onProcStart;
 		q.onProcStart.reset();
-		pause("on crash it should print \"crash\" onto the console");
+		pause("on crash it should print \"crash\" into the console");
 
 		cout << "q.onProcStart.isEmpty(): " << q.onProcStart.isEmpty() << endl;
 		cout << "q.onProcCrash.isEmpty(): " << q.onProcCrash.isEmpty() << endl;
@@ -69,6 +62,7 @@ int main() {
 		q.restart();
 		pause("restarted. after that notepad will be closed");
 	}
+
 	catch (std::runtime_error & e) {
 		std::cout << "Caught a runtime_error exception: " << e.what() << std::endl;
 	}

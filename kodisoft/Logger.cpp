@@ -1,15 +1,17 @@
 #include <windows.h>
 #include <tchar.h>
 #include <iomanip>
+#include <iostream>
 
 #include "Macro.h"
 #include "Logger.h"
 
+using std::runtime_error;
+using std::setfill;
+using std::setw;
 using std::endl;
 using std::flush;
-using std::setw;
-using std::setfill;
-using std::runtime_error;
+
 
 tstring Logger::getTime() {
 
