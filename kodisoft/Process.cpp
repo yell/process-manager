@@ -17,11 +17,11 @@ int Process::count;
 
 DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 
-	HANDLE h[2] = { ((Process*)arg)->processHandle, ((Process*)arg)->processEvent };
+	HANDLE h[2] = { ((Process*)arg)->processHandle, ((Process*)arg)->processMutex };
 
 	while (((Process*)arg)->status != FINISHING) {
 
-		WaitForMultipleObjects(2, h, TRUE, 0);
+		WaitForMultipleObjects(2, h, TRUE, 0);		
 
 		if (((Process*)arg)->status == IS_WORKING && !(((Process*)arg)->isStillActive())) {
 
@@ -36,7 +36,7 @@ DWORD WINAPI Process::watchingThreadFunc(void * arg) {
 			((Process*)arg)->log(tstring(_T("restarted after crash")));
 			((Process*)arg)->onProcStart();
 		}
-		SetEvent(((Process*)arg)->processEvent);
+		ReleaseMutex(((Process*)arg)->processMutex);
 	}
 	return 0;
 }
@@ -89,7 +89,7 @@ Process::Process(tstring & commandLine, Logger * logger, bool killAtTheEnd) :
 
 	status = IS_WORKING;
 	startRoutine();
-	processEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	processMutex = CreateMutex(NULL, FALSE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, &threadId);
 	log(tstring(_T("started")));
 }
@@ -123,7 +123,7 @@ Process::Process(DWORD pid) :
 
 void Process::stop() {
 
-	WaitForSingleObject(processEvent, INFINITE);
+	WaitForSingleObject(processMutex, INFINITE);
 
 	if (status == IS_WORKING) {
 
@@ -135,12 +135,12 @@ void Process::stop() {
 	else
 		log(tstring(_T("an attempt to stop already stopped process")));
 
-	SetEvent(processEvent);
+	ReleaseMutex(processMutex);
 }
 
 void Process::resume() {
 
-	WaitForSingleObject(processEvent, INFINITE);
+	WaitForSingleObject(processMutex, INFINITE);
 
 	if (status == STOPPED) {
 
@@ -152,12 +152,12 @@ void Process::resume() {
 	else
 		log(tstring(_T("an attempt to resume active process")));
 
-	SetEvent(processEvent);
+	ReleaseMutex(processMutex);
 }
 
 void Process::restart() {
 
-	WaitForSingleObject(processEvent, INFINITE);
+	WaitForSingleObject(processMutex, INFINITE);
 	
 	status = RESTARTING;
 	log(tstring(_T("manually restarting ...")));
@@ -170,10 +170,12 @@ void Process::restart() {
 
 	onProcManualRestart();
 
-	SetEvent(processEvent);
+	ReleaseMutex(processMutex);
 }
 
 void Process::switchLogger(Logger * logger) {
+
+	WaitForSingleObject(processMutex, INFINITE);
 
 	tstringstream tstream;
 	tstream << _T("switched logger to ") << logger->getInfo() << flush;
@@ -185,52 +187,83 @@ void Process::switchLogger(Logger * logger) {
 	tstream.str(_T(""));
 	tstream << _T("continuing logging after ") << prev << flush;
 	log(tstream.str());
+
+	ReleaseMutex(processMutex);
 }
 
 void Process::switchLogger() {
 
+	WaitForSingleObject(processMutex, INFINITE);
 	switchLogger(new FileLogger(tstring(_T("log.txt"))));
+	ReleaseMutex(processMutex);
 }
 
 bool Process::isKillAtTheEnd() const {
 
-	return killAtTheEnd;
+	WaitForSingleObject(processMutex, INFINITE);
+	bool b = killAtTheEnd;
+	ReleaseMutex(processMutex);
+
+	return b;
 }
 
 int Process::getMonitorId() const {
 
-	return monitorId;
+	WaitForSingleObject(processMutex, INFINITE);
+	int i = monitorId;
+	ReleaseMutex(processMutex);
+
+	return i;
 }
 
 DWORD Process::getProcessId() const { 
 
-	return processId;
+	WaitForSingleObject(processMutex, INFINITE);
+	DWORD d = processId;
+	ReleaseMutex(processMutex);
+
+	return d;
 }
 
 HANDLE Process::getProcessHandle() const { 
+
+	WaitForSingleObject(processMutex, INFINITE);
+	HANDLE h = processHandle;
+	ReleaseMutex(processMutex);
 
 	return processHandle;
 }
 
 tstring Process::getCommandLine() const { 
 
-	return commandLine; 
+	WaitForSingleObject(processMutex, INFINITE);
+	tstring t(commandLine);
+	ReleaseMutex(processMutex);
+
+	return t;
 }
 
 tstring Process::getStatus() const {
+
+	WaitForSingleObject(processMutex, INFINITE);
 
 	tstring statusStr[] = { _T("is working"), 
 				_T("is stopped"), 
 			        _T("restarting"),
 				_T("finishing")};
 	
-	return statusStr[status];
+	tstring t(statusStr[status]);
+
+	ReleaseMutex(processMutex);
+
+	return t;
 }
 
 tstring Process::getInfo() const {
 
-	tstringstream tstream;
+	WaitForSingleObject(processMutex, INFINITE);
 
+	tstringstream tstream;
 	tstream << setw(18) << _T("monitor id: ") << getMonitorId() << endl;
 	tstream << setw(18) << _T("pid: ") << getProcessId() << endl;
 	tstream << setw(20) << _T("handle: 0x") << getProcessHandle() << endl;
@@ -238,13 +271,20 @@ tstring Process::getInfo() const {
 	tstream << setw(18) << _T("command line: ") << getCommandLine() << endl;
 	tstream << setw(18) << _T("kill at the end: ") << boolalpha << isKillAtTheEnd() << noboolalpha << endl;
 	tstream << setw(18) << _T("logger: ") << getLoggerInfo() << flush;
+	tstring t(tstream.str());
 
-	return tstream.str();
+	ReleaseMutex(processMutex);
+
+	return t;
 }
 
 tstring Process::getLoggerInfo() const {
 
-	return logger->getInfo();
+	WaitForSingleObject(processMutex, INFINITE);
+	tstring t(logger->getInfo());
+	ReleaseMutex(processMutex);
+
+	return t;
 }
 
 Process::~Process() {
@@ -255,8 +295,8 @@ Process::~Process() {
 	WaitForSingleObject(watchingThread, INFINITE);
 	CloseHandle(watchingThread);
 
-	WaitForSingleObject(processEvent, INFINITE);
-	CloseHandle(processEvent);
+	WaitForSingleObject(processMutex, INFINITE);
+	CloseHandle(processMutex);
 
 	if (killAtTheEnd) {
 		log(tstring(_T("manually shutdowned")));

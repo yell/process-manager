@@ -1,6 +1,7 @@
 #ifndef CALLBACK_H
 #define CALLBACK_H
 
+#include <windows.h>
 #include <functional>
 
 using std::function;
@@ -10,7 +11,8 @@ class Callback {
 	private:
 		bool empty = true;
 		function<void()> callback = [](){};
-
+		HANDLE callbackEvent;
+ 
 		void operator()() const;
 
 	public:

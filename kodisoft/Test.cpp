@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 #include <cctype>
 #include <iostream>
@@ -35,6 +35,7 @@ int main() {
 		}
 
 		Process q(tstring(_T("notepad")), true);
+
 		pause("notepad should have been started");
 
 		q.onProcStart.set([](){ cout << "\ncrash!" << std::flush; });

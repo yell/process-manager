@@ -113,7 +113,7 @@ Process::Process(DWORD pid, Logger * logger, bool killAtTheEnd) :
 	commandLine = tstream.str();
 
 	status = IS_WORKING;
-	processEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+	processMutex = CreateMutex(NULL, FALSE, NULL);
 	watchingThread = CreateThread(NULL, 0, watchingThreadFunc, this, 0, NULL);
 	log(tstring(_T("started")));
 }

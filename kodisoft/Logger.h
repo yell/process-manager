@@ -11,23 +11,29 @@ class Logger
 		HANDLE logEvent;
 		tstring getTime();
 
+	protected:
+		virtual void logRoutine(tstring &) = 0;
+		virtual tstring getInfoRoutine() const = 0;
+
 	public:
 		Logger();
+
 		void log(tstring &);
-		virtual void logRoutine(tstring &) = 0;
-		virtual tstring getInfo() const = 0;
+		tstring getInfo() const;
+
 		virtual ~Logger();
 };
 
 class ConsoleLogger : public Logger
 {
+	protected:
+		void logRoutine(tstring &);
+		tstring getInfoRoutine() const;
+
 	public:
 		ConsoleLogger();
 		ConsoleLogger(const ConsoleLogger &);
-
-		void logRoutine(tstring &);
-		tstring getInfo() const;
-		
+	
 		ConsoleLogger & operator = (const ConsoleLogger &);
 		~ConsoleLogger();
 };
@@ -38,13 +44,14 @@ class FileLogger : public Logger
 		tofstream tfout;
 		tstring fileName;
 
+	protected:
+		void logRoutine(tstring &);
+		tstring getInfoRoutine() const;
+
 	public:
 		FileLogger(tstring &);
 		FileLogger();
 		FileLogger(const FileLogger &);
-
-		void logRoutine(tstring &);
-		tstring getInfo() const;
 
 		FileLogger & operator = (const FileLogger &);
 		~FileLogger();

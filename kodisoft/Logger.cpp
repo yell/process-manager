@@ -28,7 +28,9 @@ tstring Logger::getTime() {
 	tstream << setfill(_T('0')) << setw(2) << st.wSecond << _T(".");
 	tstream << setfill(_T('0')) << setw(3) << st.wMilliseconds << flush;
 
-	return tstream.str();
+	tstring t(tstream.str());
+
+	return t;
 }
 
 Logger::Logger() {
@@ -47,6 +49,15 @@ void Logger::log(tstring & tstr) {
 	SetEvent(logEvent);
 }
 
+tstring Logger::getInfo() const {
+
+	WaitForSingleObject(logEvent, INFINITE);
+	tstring t(getInfoRoutine());
+	SetEvent(logEvent);
+
+	return t;
+}
+
 Logger::~Logger() {
 
 	WaitForSingleObject(logEvent, INFINITE);
@@ -62,7 +73,7 @@ void ConsoleLogger::logRoutine(tstring & tstr) {
 	tout << tstr << endl;
 }
 
-tstring ConsoleLogger::getInfo() const {
+tstring ConsoleLogger::getInfoRoutine() const {
 
 	return tstring(_T("ConsoleLogger"));
 }
@@ -93,7 +104,7 @@ void FileLogger::logRoutine(tstring & tstr) {
 	tfout << tstr << endl;
 }
 
-tstring FileLogger::getInfo() const {
+tstring FileLogger::getInfoRoutine() const {
 	
 	tstringstream tstream;
 	tstream << _T("FileLogger(\"") << fileName << _T("\")") << flush;

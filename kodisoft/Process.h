@@ -22,7 +22,7 @@ class Process {
 		DWORD processId;
 		DWORD threadId;	// for PostThreadMessage		
 		HANDLE processHandle;
-		HANDLE processEvent;
+		HANDLE processMutex;
 		HANDLE watchingThread;
 		tstring commandLine;
 		unique_ptr<Logger> logger;
