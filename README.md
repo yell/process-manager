@@ -1,3 +1,3 @@
 Process Manager
 ========
-Internship 2015 C++ task for Kodisoft
+C++ task for Kodisoft Internship 2015
