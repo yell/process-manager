@@ -1,4 +1,4 @@
-##Process Manager
+Process Manager
 ========
 This is my solution for C++ task for Kodisoft Internship 2015. 
 
