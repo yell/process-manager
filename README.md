@@ -1,6 +1,6 @@
 ##Process Manager
 ========
-This is C++ task for Kodisoft Internship 2015. 
+This is my solution for C++ task for Kodisoft Internship 2015. 
 
 Thread-safe windows process manager allows:
 - create process by specifying command line with args or open existing one specifying pid;
