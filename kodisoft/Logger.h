@@ -5,8 +5,8 @@
 
 #include "Macro.h"
 
-class Logger
-{
+class Logger {
+
 	private:
 		HANDLE logEvent;
 		tstring getTime();
